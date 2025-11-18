@@ -1,0 +1,19 @@
+# Enable rewrite engine
+RewriteEngine On
+
+# Redirect to login if accessing root without session
+# (Handled by PHP, but we can add redirects here if needed)
+
+# Security headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+</IfModule>
+
+# Prevent directory listing
+Options -Indexes
+
+# Custom error pages (optional)
+# ErrorDocument 404 /404.php
+# ErrorDocument 500 /500.php
