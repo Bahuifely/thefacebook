@@ -2,215 +2,128 @@
 require_once 'config/session.php';
 require_once 'config/database.php';
 
-// If not logged in, redirect to login
-if (!isLoggedIn()) {
-    header('Location: login.php');
+// If already logged in, redirect to index (use BASE_PATH)
+if (isLoggedIn()) {
+    header('Location: ' . BASE_PATH . '/login.php');
     exit();
 }
 
-// Get user data
-$conn = getConnection();
-$user_id = getUserId();
+$error = '';
+$success = '';
 
-$stmt = $conn->prepare("SELECT * FROM users WHERE id = ?");
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$result = $stmt->get_result();
-$user = $result->fetch_assoc();
-
-if (!$user) {
-    session_destroy();
-    header('Location: login.php');
-    exit();
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
+    
+    if (empty($email) || empty($password)) {
+        $error = 'Please enter both email and password.';
+    } else {
+        $conn = getConnection();
+        
+        $stmt = $conn->prepare("SELECT id, email, password FROM users WHERE email = ?");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows === 1) {
+            $user = $result->fetch_assoc();
+            
+            // Plain text password comparison (as per requirements)
+            if ($password === $user['password']) {
+                // Use session helper to log in and redirect to index
+                loginUser($user['id'], $user['email']);
+                header('Location: ' . BASE_PATH . '/login.php');
+                exit();
+            } else {
+                $error = 'Invalid email or password.';
+            }
+        } else {
+            $error = 'Invalid email or password.';
+        }
+        
+        $stmt->close();
+        $conn->close();
+    }
 }
-
-$stmt->close();
-$conn->close();
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($user['name']); ?>'s Profile | thefacebook</title>
-    <link rel="stylesheet" href="css/style.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Login | thefacebook</title>
+<!-- FIXED: añadida la barra '/' entre BASE_PATH y css -->
+<link rel="stylesheet" href="<?php echo BASE_PATH; ?>/css/style.css">
 </head>
 <body>
-    <!-- Header -->
-    <div class="header">
-        <div class="header-content">
-            <a href="/" class="logo">thefacebook</a>
-            <div class="nav">
-                <a href="/">home</a>
-                <a href="/search.php">search</a>
-                <a href="/global.php">global</a>
-                <a href="/social.php">social net</a>
-                <a href="/invite.php">invite</a>
-                <a href="/faq.php">faq</a>
-                <a href="/logout.php">logout</a>
-                <div class="user-info">
-                    <img src="<?php echo htmlspecialchars($user['avatar']); ?>" alt="avatar" class="user-avatar">
-                </div>
+    <div class="topbar">
+    
+    <div class="wrap">
+
+            <div class="nav-center">
+                <a href="<?php echo BASE_PATH; ?>/index.php">login</a> |
+                <a href="<?php echo BASE_PATH; ?>/register.php">register</a> |
+                <a href="<?php echo BASE_PATH; ?>/contact.php">Contact</a>
+           <!-- NEW: avatar en navbar (div separado para poder controlar tamaño) -->
             </div>
+
+            <a href="<?php echo BASE_PATH; ?>/" class="logo">[ thefacebook ]</a>
+            <div class="nav-avatar" aria-hidden="true">
+                <img src="<?php echo BASE_PATH; ?>/images/avatar.jpeg" alt="avatar">
+            </div>
+            
         </div>
     </div>
 
-    <!-- Main Container -->
-    <div class="profile-container">
-        <!-- Sidebar -->
-        <div class="sidebar">
-            <div class="quick-search">
-                <form action="/search.php" method="GET">
-                    <input type="text" name="q" placeholder="quick search">
-                    <button type="submit">go</button>
+    <div class="page">
+        <div class="left-col">
+            
+            <div class="login-box">
+                <?php if ($error): ?>
+                    <div class="message error"><?php echo htmlspecialchars($error); ?></div>
+                <?php endif; ?>
+
+                <?php if ($success): ?>
+                    <div class="message success"><?php echo htmlspecialchars($success); ?></div>
+                <?php endif; ?>
+
+                <form method="POST" action="<?php echo BASE_PATH; ?>/index.php" style="margin:0;">
+                    <label for="email">Email:</label>
+                    <input id="email" type="email" name="email" required>
+
+                    <label for="password">Password:</label>
+                    <input id="password" type="password" name="password" required>
+
+                    <div class="login-actions" style="margin-top:6px;">
+                        <button type="submit" class="btn-small">login</button>
+                        <a href="<?php echo BASE_PATH; ?>/register.php"><button type="button" class="btn-small secondary">register</button></a>
+                    </div>
                 </form>
             </div>
-
-            <h3>My Profile</h3>
-            <ul>
-                <li><a href="/">My Profile</a></li>
-                <li><a href="/edit.php">Edit</a></li>
-            </ul>
-
-            <h3>My Friends</h3>
-            <ul>
-                <li><a href="/friends.php">My Friends</a></li>
-            </ul>
-
-            <h3>My Parties</h3>
-            <ul>
-                <li><a href="/parties.php">My Parties</a></li>
-            </ul>
-
-            <h3>My Messages</h3>
-            <ul>
-                <li><a href="/messages.php">My Messages</a></li>
-            </ul>
-
-            <h3>My Account</h3>
-            <ul>
-                <li><a href="/account.php">My Account</a></li>
-            </ul>
-
-            <h3>My Privacy</h3>
-            <ul>
-                <li><a href="/privacy.php">My Privacy</a></li>
-            </ul>
         </div>
 
-        <!-- Main Content -->
-        <div class="main-content">
-            <!-- Profile Header -->
-            <div class="profile-header">
-                <h2><?php echo htmlspecialchars($user['name']); ?>'s Profile</h2>
-                <div class="profile-location"><?php echo htmlspecialchars($user['school'] ?: 'Puget Sound'); ?></div>
-            </div>
+        <div class="main-panel">
+            <div class="panel-header">Welcome to Thefacebook!</div>
+            <div class="panel-body">
+                <h2>[ Welcome to Thefacebook ]</h2>
+                <p>Thefacebook is an online directory that connects people through social networks at colleges.</p>
 
-            <!-- Profile Content -->
-            <div class="profile-content">
-                <!-- Left Column: Picture -->
-                <div>
-                    <div class="profile-picture-section">
-                        <div class="section-header">Picture</div>
-                        <div class="section-content">
-                            <div class="profile-picture">
-                                <img src="<?php echo htmlspecialchars($user['avatar']); ?>" alt="Profile Picture">
-                            </div>
-                            <div class="action-buttons">
-                                <button class="action-button">Send Mark a Message</button>
-                                <button class="action-button">Poke Him</button>
-                            </div>
-                        </div>
-                    </div>
+                <p>We have opened up Thefacebook for popular consumption at <strong>Universidad del Valle de Guatemala University.</strong></p>
 
-                    <!-- Connection Section -->
-                    <div class="connection-section">
-                        <div class="section-header">Connection</div>
-                        <div class="connection-content">
-                            This is you
-                        </div>
-                    </div>
+                <p>You can use Thefacebook to:</p>
 
-                    <!-- Mutual Friends -->
-                    <div class="connection-section">
-                        <div class="section-header">Mutual Friends</div>
-                        <div class="connection-content">
-                            You have <strong>0</strong> friends in common with <?php echo htmlspecialchars($user['name']); ?>
-                        </div>
-                    </div>
-                </div>
+                <ul class="features">
+                    <li>Search for people at your school</li>
+                    <li>Find out who are in your classes</li>
+                    <li>Look up your friends' friends</li>
+                    <li>See a visualization of your social network</li>
+                </ul>
 
-                <!-- Right Column: Information -->
-                <div>
-                    <!-- Account Info -->
-                    <div class="info-section">
-                        <div class="section-header">Information</div>
-                        <div class="section-content">
-                            <h4 style="margin-bottom: 10px; font-size: 12px;">Account Info:</h4>
-                            <table class="info-table">
-                                <tr>
-                                    <td class="info-label">Name:</td>
-                                    <td><?php echo htmlspecialchars($user['name']); ?></td>
-                                </tr>
-                                <tr>
-                                    <td class="info-label">Member Since:</td>
-                                    <td><?php echo date('F j, Y', strtotime($user['member_since'])); ?></td>
-                                </tr>
-                                <tr>
-                                    <td class="info-label">Last Update:</td>
-                                    <td><?php echo date('F j, Y', strtotime($user['last_update'])); ?></td>
-                                </tr>
-                            </table>
+                <p>To get started, click below to register. If you have already registered, you can log in.</p>
 
-                            <h4 style="margin: 15px 0 10px 0; font-size: 12px;">Basic Info:</h4>
-                            <table class="info-table">
-                                <tr>
-                                    <td class="info-label">School:</td>
-                                    <td><?php echo htmlspecialchars($user['school'] ?: ''); ?></td>
-                                </tr>
-                                <tr>
-                                    <td class="info-label">Status:</td>
-                                    <td><?php echo htmlspecialchars($user['status']); ?></td>
-                                </tr>
-                                <tr>
-                                    <td class="info-label">Sex:</td>
-                                    <td><?php echo htmlspecialchars($user['sex'] ?: 'Male'); ?></td>
-                                </tr>
-                                <tr>
-                                    <td class="info-label">Residence:</td>
-                                    <td><?php echo htmlspecialchars($user['residence'] ?: 'Kirkld 113'); ?></td>
-                                </tr>
-                                <tr>
-                                    <td class="info-label">Birthday:</td>
-                                    <td><?php echo $user['birthday'] ? date('F j, Y', strtotime($user['birthday'])) : 'May 14, 1984'; ?></td>
-                                </tr>
-                                <tr>
-                                    <td class="info-label">Home Town:</td>
-                                    <td><?php echo htmlspecialchars($user['hometown'] ?: 'Dobbs Ferry, NY'); ?></td>
-                                </tr>
-                                <tr>
-                                    <td class="info-label">High School:</td>
-                                    <td><?php echo htmlspecialchars($user['highschool'] ?: 'Phillips Exeter Academy, 2002'); ?></td>
-                                </tr>
-                            </table>
-
-                            <h4 style="margin: 15px 0 10px 0; font-size: 12px;">Contact Info:</h4>
-                            <table class="info-table">
-                                <tr>
-                                    <td class="info-label">Email:</td>
-                                    <td><?php echo htmlspecialchars($user['email']); ?></td>
-                                </tr>
-                                <tr>
-                                    <td class="info-label">Screenname:</td>
-                                    <td><?php echo htmlspecialchars($user['screenname'] ?: 'zberg02'); ?></td>
-                                </tr>
-                                <tr>
-                                    <td class="info-label">Mobile:</td>
-                                    <td><?php echo htmlspecialchars($user['mobile'] ?: ''); ?></td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
+                <div class="panel-actions">
+                    <a href="<?php echo BASE_PATH; ?>/register.php"><button class="btn">Register</button></a>
+                    <a href="<?php echo BASE_PATH; ?>/index.php"><button class="btn">Login</button></a>
                 </div>
             </div>
         </div>

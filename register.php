@@ -61,28 +61,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register | thefacebook</title>
-    <link rel="stylesheet" href="css/style.css">
-    <script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Register | thefacebook</title>
+<link rel="stylesheet" href="<?php echo BASE_PATH; ?>/css/style.css">
+<script>
+        // use same allowed domains from server to keep client/server in sync
+        const universityDomains = <?php echo json_encode($allowed_domains, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
+
         function validateEmail() {
             const email = document.getElementById('email').value;
             const emailError = document.getElementById('email-error');
-            
-            // University domains
-            const universityDomains = [
-                'uvg.edu.gt',
-                'edu.gt',
-                'harvard.edu',
-                'stanford.edu',
-                'mit.edu',
-                'berkeley.edu',
-                'yale.edu',
-                'columbia.edu',
-                'cornell.edu',
-                'princeton.edu'
-            ];
             
             const domain = email.substring(email.lastIndexOf("@") + 1);
             let isUniversity = false;
@@ -117,67 +106,79 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     </script>
 </head>
-<body>
-    <div class="login-container">
-        <div class="login-header">
-            <h1>thefacebook</h1>
-            <p>Register - You must have a university email</p>
+<body class="login-page">
+    <div class="topbar">
+        <div class="wrap">
+            <div class="nav-center">
+                <a href="<?php echo BASE_PATH; ?>/login.php">login</a> |
+                <a href="<?php echo BASE_PATH; ?>/register.php">register</a> |
+                <a href="<?php echo BASE_PATH; ?>/contact.php">Contact</a>
+            </div>
+
+            <a href="<?php echo BASE_PATH; ?>/" class="logo">[ thefacebook ]</a>
+
+            <div class="nav-avatar" aria-hidden="true">
+                <img src="<?php echo BASE_PATH; ?>/images/avatar.jpeg" alt="avatar">
+            </div>
+        </div>
+    </div>
+
+    <div class="page" role="main">
+        <div class="left-col" aria-label="register column">
+            
+
+            <!-- removed form from left column so left column shows only avatar -->
         </div>
 
-        <?php if ($error): ?>
-            <div class="error"><?php echo htmlspecialchars($error); ?></div>
-        <?php endif; ?>
+        <div class="main-panel" aria-label="welcome panel">
+            <div class="panel-header">¡Bienvenido a Thefacebook!</div>
+            <div class="panel-body">
 
-        <?php if ($success): ?>
-            <div class="success"><?php echo htmlspecialchars($success); ?></div>
-        <?php endif; ?>
+                <!-- MOVED: registration box placed inside center panel and centered -->
+                <div class="register-box" role="form" aria-labelledby="register-title">
+                    <h3 id="register-title" style="font-size:14px;margin:0 0 8px 0;color:#2f4f7d;">Registro</h3>
 
-        <form method="POST" action="register.php" onsubmit="return validateForm()">
-            <div class="form-group">
-                <label>Full Name:</label>
-                <input type="text" name="name" required>
+                    <?php if ($error): ?>
+                        <div class="message error"><?php echo htmlspecialchars($error); ?></div>
+                    <?php endif; ?>
+
+                    <?php if ($success): ?>
+                        <div class="message success"><?php echo htmlspecialchars($success); ?></div>
+                    <?php endif; ?>
+
+                    <form method="POST" action="<?php echo BASE_PATH; ?>/register.php" onsubmit="return validateForm()" style="margin:0;">
+                        <label for="name">Full Name:</label>
+                        <input id="name" type="text" name="name" value="<?php echo isset($name) ? htmlspecialchars($name) : ''; ?>" required>
+
+                        <label for="email">University Email:</label>
+                        <input id="email" type="email" name="email" value="<?php echo isset($email) ? htmlspecialchars($email) : ''; ?>" required onblur="validateEmail()">
+                        <div id="email-error" style="color:#c00;font-size:10px;margin-top:3px;display:none;"></div>
+                        <small style="color:#666;display:block;margin-bottom:6px;">Must be from a university domain</small>
+
+                        <label for="school">School/University:</label>
+                        <input id="school" type="text" name="school" value="<?php echo isset($school) ? htmlspecialchars($school) : ''; ?>" placeholder="e.g., Universidad del Valle de Guatemala">
+
+                        <label for="sex">Sex:</label>
+                        <select id="sex" name="sex">
+                            <option value="">Select...</option>
+                            <option value="Male"<?php if (isset($sex) && $sex==='Male') echo ' selected'; ?>>Male</option>
+                            <option value="Female"<?php if (isset($sex) && $sex==='Female') echo ' selected'; ?>>Female</option>
+                        </select>
+
+                        <label for="password">Password:</label>
+                        <input id="password" type="password" name="password" required minlength="6">
+
+                        <label for="confirm_password">Confirm Password:</label>
+                        <input id="confirm_password" type="password" name="confirm_password" required>
+
+                        <div class="login-actions register-actions" style="margin-top:8px;">
+                            <button type="submit" class="btn-small">Register</button>
+                        </div>
+                    </form>
+                </div>
+
             </div>
-
-            <div class="form-group">
-                <label>University Email:</label>
-                <input type="email" id="email" name="email" required onblur="validateEmail()">
-                <div id="email-error" style="color: #c00; font-size: 10px; margin-top: 3px; display: none;"></div>
-                <small style="color: #666;">Must be from uvg.edu.gt or other university domain</small>
-            </div>
-
-            <div class="form-group">
-                <label>School/University:</label>
-                <input type="text" name="school" placeholder="e.g., Universidad del Valle de Guatemala">
-            </div>
-
-            <div class="form-group">
-                <label>Sex:</label>
-                <select name="sex">
-                    <option value="">Select...</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Password:</label>
-                <input type="password" id="password" name="password" required minlength="6">
-                <small style="color: #666;">At least 6 characters</small>
-            </div>
-
-            <div class="form-group">
-                <label>Confirm Password:</label>
-                <input type="password" id="confirm_password" name="confirm_password" required>
-            </div>
-
-            <div class="form-group">
-                <button type="submit" class="btn">Register</button>
-            </div>
-        </form>
-
-        <p style="text-align: center; margin-top: 20px;">
-            Already have an account? <a href="login.php" style="color: #3b5998;">Login here</a>
-        </p>
+        </div>
     </div>
 </body>
 </html>

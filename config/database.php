@@ -1,5 +1,9 @@
 <?php
-// ...existing code...
+// Base URL path (carpeta del proyecto bajo htdocs)
+if (!defined('BASE_PATH')) {
+    define('BASE_PATH', '/thefacebook');
+}
+
 // Database configuration
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root');
@@ -53,4 +57,3 @@ function isUniversityEmail($email) {
     return false;
 }
 ?>
-// ...existing code...
