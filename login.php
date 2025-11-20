@@ -29,7 +29,7 @@ $conn->close();
 
 // normalized variables & safe fallbacks
 $name = htmlspecialchars($user['name'] ?? 'Profile');
-$avatar = !empty($user['avatar']) ? BASE_PATH . '/' . $user['avatar'] : BASE_PATH . '/images/default-avatar.png';
+$avatar = BASE_PATH . '/images/avatar.jpeg';
 $school = htmlspecialchars($user['school'] ?? 'Puget Sound');
 $status = htmlspecialchars($user['status'] ?? 'Student');
 $member_since_raw = $user['member_since'] ?? $user['created_at'] ?? null;
